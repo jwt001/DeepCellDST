@@ -213,7 +213,6 @@ def get_parse_args():
 
     args.gpus_str = args.gpus
     args.gpus = [int(gpu) for gpu in args.gpus.split(',')]
-    args.gpus = [i for i in range(len(args.gpus))] if args.gpus[0] >=0 else [-1]
     args.lr_step = [int(i) for i in args.lr_step.split(',')]
 
 
