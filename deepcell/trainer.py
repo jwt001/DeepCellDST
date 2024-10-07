@@ -15,6 +15,7 @@ from .utils.logger import Logger
 
 class Trainer():
     def __init__(self,
+                 args, 
                  model, 
                  training_id = 'default',
                  save_dir = './exp', 
@@ -22,11 +23,11 @@ class Trainer():
                  loss_weight = [3.0, 1.0, 2.0],
                  emb_dim = 128, 
                  device = 'cpu', 
-                 batch_size=32, num_workers=4, 
                  distributed = False
                  ):
         super(Trainer, self).__init__()
         # Config
+        self.args = args
         self.emb_dim = emb_dim
         self.device = device
         self.lr = lr
@@ -41,8 +42,8 @@ class Trainer():
         time_str = time.strftime('%Y-%m-%d-%H-%M')
         self.log_path = os.path.join(self.log_dir, 'log-{}.txt'.format(time_str))
         
-        self.batch_size = batch_size
-        self.num_workers = num_workers
+        self.batch_size = args.batch_size
+        self.num_workers = args.num_workers
         self.distributed = distributed and torch.cuda.is_available()
         
         # Distributed Training 
@@ -50,8 +51,8 @@ class Trainer():
         if self.distributed:
             if 'LOCAL_RANK' in os.environ:
                 self.local_rank = int(os.environ['LOCAL_RANK'])
-            self.device = 'cuda:%d' % self.local_rank
-            torch.cuda.set_device(self.local_rank)
+            self.device = 'cuda:%d' % args.gpus[self.local_rank]
+            torch.cuda.set_device(args.gpus[self.local_rank])
             torch.distributed.init_process_group(backend='nccl', init_method='env://')
             self.world_size = torch.distributed.get_world_size()
             self.rank = torch.distributed.get_rank()
