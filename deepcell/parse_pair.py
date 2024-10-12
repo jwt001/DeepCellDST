@@ -18,7 +18,7 @@ from .utils.aiger_utils import aig_to_xdata
 from .utils.circuit_utils import get_fanin_fanout, read_file, add_node_index, feature_gen_connect
 from .utils.dataset_utils import *
 
-class NpzParser():
+class NpzParser_Pair():
     '''
         Parse the npz file into an inmemory torch_geometric.data.Data object
     '''
@@ -74,56 +74,44 @@ class NpzParser():
             
             for cir_idx, cir_name in enumerate(circuits):
                 print('Parse circuit: {}, {:} / {:} = {:.2f}%'.format(cir_name, cir_idx+1, len(circuits), cir_idx+1 / len(circuits) * 100))
-                # if cir_idx > 50:
-                #     break
-                # x = circuits[cir_name]["x"]
-                # edge_index = circuits[cir_name]["edge_index"]
-
-                # tt_dis = labels[cir_name]['tt_dis']
-                # tt_pair_index = labels[cir_name]['tt_pair_index']
-                # prob = labels[cir_name]['prob']
                 
-                # rc_pair_index = labels[cir_name]['rc_pair_index']
-                # is_rc = labels[cir_name]['is_rc']
-
                 x = circuits[cir_name]["x"]
                 edge_index = circuits[cir_name]["edge_index"]
-                # dis = 1 - sim
-                tt_dis = 1-circuits[cir_name]["tt_sim"]
                 is_pi = circuits[cir_name]["is_pi"]
-                tt_pair_index = circuits[cir_name]["tt_pair_index"]
                 no_edges = circuits[cir_name]["no_edges"]
-                connect_label = circuits[cir_name]["connect_label"]
                 prob = circuits[cir_name]["prob"]
-                connect_pair_index = circuits[cir_name]["connect_pair_index"]
                 backward_level = circuits[cir_name]["backward_level"]
                 forward_index = circuits[cir_name]["forward_index"]
                 forward_level = circuits[cir_name]["forward_level"]
                 no_nodes = circuits[cir_name]["no_nodes"]
                 backward_index = circuits[cir_name]["backward_index"]
-
-                if len(tt_pair_index) == 0:
-                    print('No tt : ', cir_name)
-                    continue
-
-                tot_pairs += len(tt_dis)
-
-                # check the gate types
-                # assert (x[:, 1].max() == (len(self.args.gate_to_index)) - 1), 'The gate types are not consistent.'
-                # graph = parse_pyg_mlpgate(
-                #     x, edge_index, tt_dis, tt_pair_index, 
-                #     prob, rc_pair_index, is_rc
-                # )
+                
+                tt_dis = None
+                tt_pair_index = None
+                connect_label = None
+                connect_pair_index = None
 
                 graph = parse_pyg_mlpgate(
                     x, edge_index, tt_dis, tt_pair_index, is_pi,
                     prob, no_edges, connect_label, connect_pair_index,
                     backward_level, forward_index, forward_level,
-                    no_nodes, backward_index
+                    no_nodes, backward_index, 
+                    no_label=True
                 )
-
+                
+                graph.aig_x = torch.tensor(circuits[cir_name]["aig_x"])
+                graph.aig_edge_index = torch.tensor(circuits[cir_name]["aig_edge_index"], dtype=torch.long).contiguous()
+                graph.aig_prob = torch.tensor(circuits[cir_name]["aig_prob"])
+                graph.aig_forward_index = torch.tensor(circuits[cir_name]["aig_forward_index"])
+                graph.aig_forward_level = torch.tensor(circuits[cir_name]["aig_forward_level"])
+                graph.aig_backward_index = torch.tensor(circuits[cir_name]["aig_backward_index"])
+                graph.aig_backward_level = torch.tensor(circuits[cir_name]["aig_backward_level"])
+                graph.aig_gate = torch.tensor(circuits[cir_name]["aig_gate"])
+                graph.aig_batch = torch.zeros(len(graph.aig_x), dtype=torch.long)
+                
                 graph.name = cir_name
                 data_list.append(graph)
+                
             data, slices = self.collate(data_list)
             torch.save((data, slices), self.processed_paths[0])
             print('[INFO] Inmemory dataset save: ', self.processed_paths[0])
