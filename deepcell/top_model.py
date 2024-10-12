@@ -6,7 +6,6 @@ import torch
 import os
 from torch import nn
 from torch.nn import LSTM, GRU
-import deepgate as dg
 from .utils.dag_utils import subgraph, custom_backward_subgraph
 from .utils.utils import generate_hs_init
 
