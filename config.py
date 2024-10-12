@@ -50,7 +50,7 @@ def get_parse_args():
                              help='learning rate for batch size 32.')
     parser.add_argument('--weight_decay', type=float, default=1e-10, 
                              help='weight decay (default: 1e-10)')
-    parser.add_argument('--lr_step', type=str, default='30,45',
+    parser.add_argument('--lr_step', type=str, default='40',
                              help='drop learning rate by 10.')
     parser.add_argument('--num_epochs', type=int, default=40,
                              help='total training epochs.')
@@ -83,7 +83,7 @@ def get_parse_args():
         args.gpus = [args.gpus[0]]
 
     # dir
-    args.root_dir = os.path.join(os.path.dirname(__file__), '..')
+    args.root_dir = os.path.join(os.path.dirname(__file__), '.')
     args.exp_dir = os.path.join(args.root_dir, 'exp')
     args.save_dir = os.path.join(args.exp_dir, args.exp_id)
     args.debug_dir = os.path.join(args.save_dir, 'debug')

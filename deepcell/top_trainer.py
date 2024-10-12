@@ -17,9 +17,6 @@ class TopTrainer():
     def __init__(self,
                  args, 
                  model, 
-                 training_id = 'default',
-                 save_dir = './exp', 
-                 lr = 1e-4,
                  loss_weight = [1.0, 1.0], 
                  device = 'cpu', 
                  distributed = False
@@ -29,12 +26,13 @@ class TopTrainer():
         self.args = args
         self.emb_dim = args.dim_hidden
         self.device = device
-        self.lr = lr
-        self.lr_step = -1
+        self.lr = args.lr
+        self.lr_step = args.lr_step
         self.loss_weight = loss_weight
-        if not os.path.exists(save_dir):
-            os.makedirs(save_dir)
-        self.log_dir = os.path.join(save_dir, training_id)
+        training_id = args.exp_id
+        if not os.path.exists(args.save_dir):
+            os.makedirs(args.save_dir)
+        self.log_dir = os.path.join(args.save_dir, training_id)
         if not os.path.exists(self.log_dir):
             os.makedirs(self.log_dir)
         # Log Path

@@ -65,6 +65,8 @@ class TopModel(nn.Module):
         # Get PM and AIG tokens
         pm_hs, pm_hf = self.deepcell(G)
         aig_hs, aig_hf = self.deepgate(G)
+        aig_hs = aig_hs.detach()
+        aig_hf = aig_hf.detach()
         pm_tokens = torch.cat([pm_hs, pm_hf], dim=1)
         aig_tokens = torch.cat([aig_hs, aig_hf], dim=1)
         mcm_pm_tokens = torch.zeros(0, self.args.dim_hidden * 2).to(self.device)
