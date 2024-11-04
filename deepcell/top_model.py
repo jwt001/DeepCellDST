@@ -43,19 +43,33 @@ class TopModel(nn.Module):
         # Token masking
         self.mask_token = nn.Parameter(torch.randn(1, args.dim_hidden))  # learnable mask token
         
-    def mask_tokens(self, tokens, mask_ratio): 
+    def mask_tokens(self, G, tokens, mask_ratio=0.05, k_hop=4): 
         """
-        Randomly mask a ratio of tokens.
+        Randomly mask a ratio of tokens and extract its k_hop
         Args:
+            G: Input graph
             tokens: Input tokens (batch_size, seq_len, dim_hidden)
             mask_ratio: Percentage of tokens to mask
+            k_hop: Number of hops to extract
         Returns:
             masked_tokens: Tokens with some positions replaced by mask token
             mask_indices: Indices of masked tokens
         """
         seq_len = len(tokens)
-        num_mask = int(mask_ratio * seq_len)
-        mask_indices = torch.randperm(seq_len)[:num_mask]  # randomly select tokens to mask
+        mask_indices = torch.randperm(seq_len)[:int(mask_ratio * seq_len)]  # randomly select tokens to mask
+        mask_flag = torch.zeros(seq_len, dtype=torch.bool)
+        mask_flag[mask_indices] = True
+        
+        # Extract k-hop subgraph
+        current_nodes = mask_indices
+        for hop in range(k_hop):
+            fanin_nodes, _ = subgraph(current_nodes, G.edge_index, dim=1)
+            fanin_nodes = torch.unique(fanin_nodes)
+            current_nodes = fanin_nodes
+            mask_flag[fanin_nodes] = True
+            mask_indices = torch.cat([mask_indices, fanin_nodes])
+        
+        mask_indices = torch.unique(mask_indices)
         masked_tokens = tokens.clone()
         masked_tokens[mask_indices, self.args.dim_hidden:] = self.mask_token
         return masked_tokens, mask_indices
@@ -71,7 +85,9 @@ class TopModel(nn.Module):
         mcm_pm_tokens = torch.zeros(0, self.args.dim_hidden * 2).to(self.device)
         
         # Mask a portion of PM tokens
-        pm_tokens_masked, mask_indices = self.mask_tokens(pm_tokens, self.mask_ratio)
+        pm_tokens_masked, mask_indices = self.mask_tokens(
+            G, pm_tokens, self.mask_ratio, k_hop=4
+        )
         
         # Reconstruction: Mask Circuit Modeling 
         for batch_id in range(G.batch.max().item() + 1): 

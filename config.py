@@ -63,7 +63,7 @@ def get_parse_args():
     parser.add_argument('--dim_hidden', type=int, default=128)
     parser.add_argument('--tf_head', type=int, default=8)
     parser.add_argument('--tf_layer', type=int, default=4)
-    parser.add_argument('--mask_ratio', type=float, default=0.15)
+    parser.add_argument('--mask_ratio', type=float, default=0.03)
     
     args = parser.parse_args()
 
