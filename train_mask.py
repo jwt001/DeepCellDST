@@ -15,7 +15,7 @@ DATA_DIR = './data/dg_pair'
 if __name__ == '__main__':
     args = get_parse_args()
     circuit_path = '/Users/zhengyuanshi/studio/DeepCell_Dataset/deepgate_dataset/pair_graphs.npz'
-    num_epochs = 60
+    num_epochs = args.num_epochs
     
     print('[INFO] Parse Dataset')
     dataset = deepcell.NpzParser_Pair(DATA_DIR, circuit_path)

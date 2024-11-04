@@ -6,7 +6,6 @@ import torch
 import os
 from torch import nn
 from torch.nn import LSTM, GRU
-import deepgate as dg
 from .utils.dag_utils import subgraph, custom_backward_subgraph
 from .utils.utils import generate_hs_init
 
@@ -80,6 +79,8 @@ class TopModel(nn.Module):
         # Get PM and AIG tokens
         pm_hs, pm_hf = self.deepcell(G)
         aig_hs, aig_hf = self.deepgate(G)
+        aig_hs = aig_hs.detach()
+        aig_hf = aig_hf.detach()
         pm_tokens = torch.cat([pm_hs, pm_hf], dim=1)
         aig_tokens = torch.cat([aig_hs, aig_hf], dim=1)
         mcm_pm_tokens = torch.zeros(0, self.args.dim_hidden * 2).to(self.device)
@@ -103,8 +104,6 @@ class TopModel(nn.Module):
         pm_prob = self.deepcell.pred_prob(pm_hf)
         
         return mcm_pm_tokens, mask_indices, pm_tokens, pm_prob
-        
-    
    
     def load(self, model_path):
         checkpoint = torch.load(model_path, map_location=lambda storage, loc: storage)
