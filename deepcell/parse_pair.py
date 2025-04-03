@@ -73,43 +73,33 @@ class NpzParser_Pair():
             circuits = read_npz_file(self.circuit_path)['circuits'].item()
             
             for cir_idx, cir_name in enumerate(circuits):
-                print('Parse circuit: {}, {:} / {:} = {:.2f}%'.format(cir_name, cir_idx+1, len(circuits), cir_idx+1 / len(circuits) * 100))
-                
+                print('Parse circuit: {}, {:} / {:} = {:.2f}%'.format(cir_name, cir_idx+1, len(circuits), (cir_idx+1) / len(circuits) * 100))
                 x = circuits[cir_name]["x"]
                 edge_index = circuits[cir_name]["edge_index"]
-                is_pi = circuits[cir_name]["is_pi"]
-                no_edges = circuits[cir_name]["no_edges"]
-                prob = circuits[cir_name]["prob"]
-                backward_level = circuits[cir_name]["backward_level"]
-                forward_index = circuits[cir_name]["forward_index"]
-                forward_level = circuits[cir_name]["forward_level"]
-                no_nodes = circuits[cir_name]["no_nodes"]
-                backward_index = circuits[cir_name]["backward_index"]
-                
-                tt_dis = None
-                tt_pair_index = None
-                connect_label = None
-                connect_pair_index = None
 
+                # tt_dis = labels[cir_name]['tt_dis']
+                # tt_pair_index = labels[cir_name]['tt_pair_index']
+                prob = circuits[cir_name]['prob']
+                gate_type= circuits[cir_name]['gatetype']
+                gate = circuits[cir_name]['gate']
+                # rc_pair_index = labels[cir_name]['rc_pair_index']
+                # is_rc = labels[cir_name]['is_rc']
+
+                # if len(tt_pair_index) == 0 or len(rc_pair_index) == 0:
+                #     print('No tt or rc pairs: ', cir_name)
+                #     continue
+
+                # tot_pairs += len(tt_dis)
+
+                # check the gate types
+                # assert (x[:, 1].max() == (len(self.args.gate_to_index)) - 1), 'The gate types are not consistent.'
                 graph = parse_pyg_mlpgate(
-                    x, edge_index, tt_dis, tt_pair_index, is_pi,
-                    prob, no_edges, connect_label, connect_pair_index,
-                    backward_level, forward_index, forward_level,
-                    no_nodes, backward_index, 
-                    no_label=True
+                    x, edge_index, prob, 
                 )
-                
-                graph.aig_x = torch.tensor(circuits[cir_name]["aig_x"])
-                graph.aig_edge_index = torch.tensor(circuits[cir_name]["aig_edge_index"], dtype=torch.long).contiguous()
-                graph.aig_prob = torch.tensor(circuits[cir_name]["aig_prob"])
-                graph.aig_forward_index = torch.tensor(circuits[cir_name]["aig_forward_index"])
-                graph.aig_forward_level = torch.tensor(circuits[cir_name]["aig_forward_level"])
-                graph.aig_backward_index = torch.tensor(circuits[cir_name]["aig_backward_index"])
-                graph.aig_backward_level = torch.tensor(circuits[cir_name]["aig_backward_level"])
-                graph.aig_gate = torch.tensor(circuits[cir_name]["aig_gate"])
-                graph.aig_batch = torch.zeros(len(graph.aig_x), dtype=torch.long)
-                
                 graph.name = cir_name
+                graph.gatetype = gate_type
+                graph.gate = torch.tensor(gate, dtype=torch.long).contiguous()
+                graph.batch = torch.zeros(len(graph.x), dtype=torch.long)
                 data_list.append(graph)
                 
             data, slices = self.collate(data_list)
@@ -138,7 +128,7 @@ class AigParser():
         rc_pair_index = []
         is_rc = []
         graph = parse_pyg_mlpgate(
-            x_data, edge_index, tt_dis, tt_pair_index, prob, rc_pair_index, is_rc
+            x_data, edge_index, prob, 
         )
         graph.name = circuit_name
         graph.PIs = graph.forward_index[(graph['forward_level'] == 0) & (graph['backward_level'] != 0)]
@@ -176,4 +166,5 @@ class BenchParser():
         graph.POs = graph.backward_index[(graph['backward_level'] == 0) & (graph['forward_level'] != 0)]
         graph.no_connect = graph.forward_index[(graph['forward_level'] == 0) & (graph['backward_level'] == 0)]
         
-        return graph       
+        return graph    
+   

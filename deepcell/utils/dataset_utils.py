@@ -27,6 +27,8 @@ class OrderedData(Data):
             return self.num_nodes
         if key == 'aig_batch': 
             return 1
+        if key == 'topnodes':
+            return self.num_nodes
         else:
             return 0
 
@@ -40,51 +42,40 @@ class OrderedData(Data):
         else:
             return 0
 
-def parse_pyg_mlpgate(x, edge_index, tt_dis, tt_pair_index, is_pi, \
-                        prob, no_edges, connect_label, connect_pair_index, \
-                        backward_level, forward_index, forward_level, \
-                        no_nodes, backward_index, \
-                        no_label = False
-                        ):
-    
-    # x_torch = construct_node_feature(x, num_gate_types)
-    # print(x_torch)
-    x_torch = torch.LongTensor(x)
-    # print(x_torch)
+def parse_pyg_mlpgate(x, edge_index, y, num_gate_types=3):
+    x_torch = construct_node_feature(x, num_gate_types)#对于每个节点的门的种类，生成one hot编码  torch.tensor([[0, 1, 0], [1, 0, 0]])
 
-    if no_label:
-        tt_pair_index = None
-        tt_dis = None
-        connect_pair_index = None
-        connect_label = None
+    # tt_pair_index = torch.tensor(tt_pair_index, dtype=torch.long)
+    # tt_pair_index = tt_pair_index.t().contiguous()
+    # rc_pair_index = torch.tensor(rc_pair_index, dtype=torch.long)
+    # rc_pair_index = rc_pair_index.t().contiguous()
+    # tt_dis = torch.tensor(tt_dis)
+    # is_rc = torch.tensor(is_rc, dtype=torch.float32).unsqueeze(1)
+
+    edge_index = torch.tensor(edge_index, dtype=torch.long)
+    
+    if len(edge_index) == 0:
+        edge_index = edge_index.t().contiguous()
+        forward_index = torch.LongTensor([i for i in range(len(x))])
+        backward_index = torch.LongTensor([i for i in range(len(x))])
+        forward_level = torch.zeros(len(x))
+        backward_level = torch.zeros(len(x))
     else:
-        tt_pair_index = torch.tensor(tt_pair_index, dtype=torch.long)
-        tt_dis = torch.tensor(tt_dis)
-        connect_pair_index = torch.tensor(connect_pair_index, dtype=torch.long).contiguous()
-        connect_label = torch.tensor(connect_label)
-        if len(connect_pair_index) == 0 or connect_pair_index.shape[1] == 0:
-            connect_pair_index = connect_pair_index.reshape((2, 0))
+        edge_index = edge_index.t().contiguous()
+        print("edge_index =", edge_index.shape)
+        forward_level, forward_index, backward_level, backward_index = return_order_info(edge_index, x_torch.size(0))
 
-    edge_index = torch.tensor(edge_index, dtype=torch.long).contiguous()
-    
-    forward_level = torch.tensor(forward_level)
-    backward_level = torch.tensor(backward_level)
-
-    forward_index = torch.tensor(forward_index)
-    backward_index = torch.tensor(backward_index)
-
-    graph = OrderedData(x=x_torch, edge_index=edge_index, y=None,
-                        tt_pair_index=tt_pair_index, tt_dis=tt_dis, 
+    graph = OrderedData(x=x_torch, edge_index=edge_index, y = y,
                         forward_level=forward_level, forward_index=forward_index, 
                         backward_level=backward_level, backward_index=backward_index)
     graph.use_edge_attr = False
-    
-    if not no_label:
-        graph.connect_label = connect_label
-        graph.connect_pair_index = connect_pair_index
 
-    graph.gate = torch.tensor(x[:, 1:2], dtype=torch.float)
-    graph.prob = torch.tensor(prob).reshape((len(x)))
-
+    # add reconvegence info
+    # graph.rec = torch.tensor(x[:, 3:4], dtype=torch.float)
+    # graph.rec_src = torch.tensor(x[:, 4:5], dtype=torch.float)
+    # add gt info
+    # add indices for gate types
+    graph.gate = torch.tensor(x[:, 1:2], dtype=torch.float)#每个节点对应一个门
+    graph.prob = torch.tensor(y).reshape((len(x), 1))
+    graph.topnodes = torch.tensor(len(x) - 1, dtype=torch.long)
     return graph
-

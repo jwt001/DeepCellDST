@@ -19,10 +19,10 @@ def get_parse_args():
     parser.add_argument('--disable_encode', action='store_true', default=False)
 
     # system
-    parser.add_argument('--gpus', default='-1', 
+    parser.add_argument('--gpus', default='0', 
                              help='-1 for CPU, use comma for multiple gpus')
     parser.add_argument("--local-rank", default=0, type=int)
-    parser.add_argument('--num_workers', type=int, default=4,
+    parser.add_argument('--num_workers', type=int, default=0,
                              help='dataloader threads. 0 for single-thread.')
     parser.add_argument('--not_cuda_benchmark', action='store_true',
                              help='disable when the input size is not fixed.')
@@ -54,7 +54,7 @@ def get_parse_args():
                              help='drop learning rate by 10.')
     parser.add_argument('--num_epochs', type=int, default=40,
                              help='total training epochs.')
-    parser.add_argument('--batch_size', type=int, default=4,
+    parser.add_argument('--batch_size', type=int, default=32,
                              help='batch size')
     parser.add_argument('--trainval_split', default=0.9, type=float,
                              help='the splitting setting for training dataset and validation dataset.')

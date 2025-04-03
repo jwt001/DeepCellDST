@@ -57,9 +57,9 @@ class Model(nn.Module):
 
     def forward(self, G):
         device = next(self.parameters()).device
-        num_nodes = len(G.aig_gate)
-        num_layers_f = max(G.aig_forward_level).item() + 1
-        num_layers_b = max(G.aig_backward_level).item() + 1
+        num_nodes = len(G.gate)
+        num_layers_f = max(G.forward_level).item() + 1
+        num_layers_b = max(G.backward_level).item() + 1
         
         # initialize the structure hidden state
         if self.enable_encode:
@@ -75,22 +75,27 @@ class Model(nn.Module):
         hs = hs.to(device)
         hf = hf.to(device)
         
-        edge_index = G.aig_edge_index
+        edge_index = G.edge_index
 
         node_state = torch.cat([hs, hf], dim=-1)
-        and_mask = G.aig_gate.squeeze(1) == 1
-        not_mask = G.aig_gate.squeeze(1) == 2
+        and_mask = G.gate.squeeze(1) == 1
+        not_mask = G.gate.squeeze(1) == 2
+        #print("and_mask =", len(and_mask == False))
 
         for _ in range(self.num_rounds):
             for level in range(1, num_layers_f):
                 # forward layer
-                layer_mask = G.aig_forward_level == level
+                layer_mask = G.forward_level == level
 
                 # AND Gate
-                l_and_node = G.aig_forward_index[layer_mask & and_mask]
+                l_and_node = G.forward_index[layer_mask & and_mask]
                 if l_and_node.size(0) > 0:
                     and_edge_index, and_edge_attr = subgraph(l_and_node, edge_index, dim=1)
-                    
+                    # print("G.name =", G.name)
+                    # print("layer_mask =", layer_mask)
+                    # print("and_edge_index =", torch.tensor(and_edge_index, dtype=torch.float32).shape)
+                    # print("and_edge_attr =", and_edge_attr)
+                    # print("hs =", hs.shape)
                     
                     # Update structure hidden state
                     msg = self.aggr_and_strc(hs, and_edge_index, and_edge_attr)
@@ -106,7 +111,7 @@ class Model(nn.Module):
                     hf[l_and_node, :] = hf_and.squeeze(0)
 
                 # NOT Gate
-                l_not_node = G.aig_forward_index[layer_mask & not_mask]
+                l_not_node = G.forward_index[layer_mask & not_mask]
                 if l_not_node.size(0) > 0:
                     not_edge_index, not_edge_attr = subgraph(l_not_node, edge_index, dim=1)
                     # Update structure hidden state

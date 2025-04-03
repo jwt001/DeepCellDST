@@ -2,6 +2,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import numpy as np
 import torch
 import os
 from torch import nn
@@ -47,9 +48,10 @@ class Model(nn.Module):
         # self.update_and_func = GRU(self.dim_hidden, self.dim_hidden)
         # self.update_not_strc = GRU(self.dim_hidden, self.dim_hidden)
         # self.update_not_func = GRU(self.dim_hidden, self.dim_hidden)
-        self.update_cell_strc = GRU(self.dim_hidden + 64, self.dim_hidden)
+        self.update_cell_strc = GRU(self.dim_hidden + 64, self.dim_hidden)#add gate_type
         self.update_cell_func = GRU(self.dim_hidden + 64, self.dim_hidden)
         # Readout 
+        
         self.readout_prob = MLP(self.dim_hidden, self.dim_mlp, 1, num_layer=3, p_drop=0.2, norm_layer='batchnorm', act_layer='relu')
         self.connect_head = MLP(
             dim_in=self.dim_hidden*2, dim_hidden=self.dim_mlp, dim_pred=3, 
@@ -99,7 +101,7 @@ class Model(nn.Module):
 
                 # AND Gate
                 # l_node = G.forward_index[layer_mask & and_mask]
-                l_node = G.forward_index[layer_mask]
+                l_node = G.forward_index[layer_mask]#取出所有该层级上的节点
 
                 if l_node.size(0) > 0:
                     l_edge_index, and_edge_attr = subgraph(l_node, edge_index, dim=1)
@@ -112,7 +114,7 @@ class Model(nn.Module):
                     l_msg = torch.index_select(msg, dim=0, index=l_node)
                     l_hs = torch.index_select(hs, dim=0, index=l_node)
                     # _, l_hs = self.update_and_strc(l_msg.unsqueeze(0), l_hs.unsqueeze(0))
-                    _, l_hs = self.update_cell_strc(torch.cat([l_msg, l_x], dim=1).unsqueeze(0), l_hs.unsqueeze(0))
+                    _, l_hs = self.update_cell_strc(torch.cat([l_msg, l_x], dim=1).unsqueeze(0), l_hs.unsqueeze(0))#将真值表和aggr后的信息拼接起来
 
                     hs[l_node, :] = l_hs.squeeze(0)
                     # Update function hidden state
@@ -125,23 +127,6 @@ class Model(nn.Module):
                     _, l_hf = self.update_cell_func(torch.cat([l_msg, l_x], dim=1).unsqueeze(0), l_hf.unsqueeze(0))
 
                     hf[l_node, :] = l_hf.squeeze(0)
-
-                # NOT Gate
-                # l_not_node = G.forward_index[layer_mask & not_mask]
-                # if l_not_node.size(0) > 0:
-                #     not_edge_index, not_edge_attr = subgraph(l_not_node, edge_index, dim=1)
-                #     # Update structure hidden state
-                #     msg = self.aggr_not_strc(hs, not_edge_index, not_edge_attr)
-                #     not_msg = torch.index_select(msg, dim=0, index=l_not_node)
-                #     hs_not = torch.index_select(hs, dim=0, index=l_not_node)
-                #     _, hs_not = self.update_not_strc(not_msg.unsqueeze(0), hs_not.unsqueeze(0))
-                #     hs[l_not_node, :] = hs_not.squeeze(0)
-                #     # Update function hidden state
-                #     msg = self.aggr_not_func(hf, not_edge_index, not_edge_attr)
-                #     not_msg = torch.index_select(msg, dim=0, index=l_not_node)
-                #     hf_not = torch.index_select(hf, dim=0, index=l_not_node)
-                #     _, hf_not = self.update_not_func(not_msg.unsqueeze(0), hf_not.unsqueeze(0))
-                #     hf[l_not_node, :] = hf_not.squeeze(0)
                 
                 # Update node state
                 node_state = torch.cat([hs, hf], dim=-1)
@@ -154,7 +139,7 @@ class Model(nn.Module):
     
     def pred_prob(self, hf):
         prob = self.readout_prob(hf)
-        prob = torch.clamp(prob, min=0.0, max=1.0)
+        prob= torch.clamp(prob, min=0.0, max=1.0)
         return prob
     
     def pred_connect(self, g, hs):
