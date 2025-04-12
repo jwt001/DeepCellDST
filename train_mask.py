@@ -26,7 +26,7 @@ if __name__ == '__main__':
         dc_ckpt='./ckpt/dc.pth', 
         dg_ckpt='./ckpt/dg.pth'
     )
-    #model.load('/home/jwt/DeepCell/ckpt/DeepMap_model.pth') #deepcell pth
+    model.load('/home/jwt/DeepCell/deepcell.pth') #deepcell pth
     trainer = deepcell.top_trainer.TopTrainer(args, model, distributed=True)#need change
     trainer.set_training_args(lr=1e-4, lr_step=50)
     print('[INFO] Stage 1 Training ...')

@@ -105,10 +105,16 @@ class TopModel(nn.Module):
                 #batch_pred_pm_tokens = batch_predicted_tokens[:batch_pm_tokens_masked.shape[0], :]
                 mcm_pm_tokens = torch.cat([mcm_pm_tokens, batch_predicted_tokens], dim=0)
         else:
+            without_pi = []
             batch_aig_tokens = aig_tokens
             batch_predicted_tokens = self.mask_tf(batch_aig_tokens)
             #batch_pred_pm_tokens = batch_predicted_tokens[:batch_pm_tokens_masked.shape[0], :]
             mcm_pm_tokens = torch.cat([mcm_pm_tokens, batch_predicted_tokens], dim=0)
+            for index, item in enumerate(G.gate):
+                if item != 0:
+                    without_pi.append(index)
+            hf = mcm_pm_tokens[:, self.dim_hidden:]
+            return None, hf, None, without_pi
             
         hs = mcm_pm_tokens[:, :self.dim_hidden]
         hf = mcm_pm_tokens[:, self.dim_hidden:]

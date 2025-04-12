@@ -14,7 +14,7 @@ from torch_geometric.data import Data, InMemoryDataset
 from torch_geometric.loader import DataLoader
 
 from .utils.data_utils import read_npz_file
-from .utils.aiger_utils import aig_to_xdata
+from .utils.aiger_utils import aig_to_xdata, aig_to_xdata_bak
 from .utils.circuit_utils import get_fanin_fanout, read_file, add_node_index, feature_gen_connect
 from .utils.dataset_utils import *
 
@@ -117,7 +117,8 @@ class AigParser():
     def read_aiger(self, aig_path):
         circuit_name = os.path.basename(aig_path).split('.')[0]
         # tmp_aag_path = os.path.join(self.tmp_dir, '{}.aag'.format(circuit_name))
-        x_data, edge_index = aig_to_xdata(aig_path)
+        x_data, edge_index = aig_to_xdata_bak(aig_path, f'/home/jwt/DeepCell/aag/{circuit_name}.aag')
+        # print("len x_data =", len(x_data))
         # os.remove(tmp_aag_path)
         # Construct graph object 
         x_data = np.array(x_data)

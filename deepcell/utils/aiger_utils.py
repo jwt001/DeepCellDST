@@ -119,7 +119,6 @@ def aig_to_xdata_bak(aig_filename, tmp_aag_filename, gate_to_index={'PI': 0, 'AN
     # read aag
     f = open(tmp_aag_filename, 'r')
     lines = f.readlines()
-    f.close()
     header = lines[0].strip().split(" ")
     assert header[0] == 'aag', 'The header of AIG file is wrong.'
     # “M”, “I”, “L”, “O”, “A” separated by spaces.
@@ -355,5 +354,6 @@ def aig_to_xdata(aig_filename, gate_to_index={'PI': 0, 'AND': 1, 'NOT': 2}):
                 not_index = len(x_data) - 1
                 edge_index.append([po_index, not_index])
                 has_not[po_index] = not_index
+
 
     return x_data, edge_index
